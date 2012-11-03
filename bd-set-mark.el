@@ -13,7 +13,7 @@
 ;; Version: 0.1
 ;; Last-Updated:
 ;;           By:
-;;     Update #: 13
+;;     Update #: 16
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -35,11 +35,14 @@
 ;;; Commentary:
 
 ;;
-;;  How is different than regular `set-mark-command'
+;;  How is different than regular `set-mark-command'?
 ;;
 ;;  1. Allow mark-ring traversal in both directions.
 ;;
-;;  2. When starting popping, we save our current point in the mark-ring.
+;;  TODO:
+;;
+;;  When starting popping, we save our current point in the mark-ring. (would
+;;  this be helpful?)
 ;;
 ;;
 ;;  This started out as a rehash of two answers with some bug fixes on SO:
@@ -104,7 +107,7 @@ repeated press of C-SPC goes in same direction
     (cond
      ;; Enabled repeated un-pops with C-SPC
      ((eq last-command 'unpop-to-mark-command)
-      (if (equal arg '(4))
+      (if (consp arg)
           (progn                        ; C-u C-SPC reverses back to normal direction
             (pop-to-mark-command)       ; invoke twice to switch directions
             (setq do-it t))
@@ -113,7 +116,6 @@ repeated press of C-SPC goes in same direction
      ;; Negative argument un-pops: C-- C-SPC
      ((eq arg '-)
       (setq this-command 'unpop-to-mark-command)
-      (push-mark)
       (unpop-to-mark-command))
      (t
       (setq do-it t)))
