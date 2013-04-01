@@ -13,7 +13,7 @@
 ;; Version: 0.1
 ;; Last-Updated:
 ;;           By:
-;;     Update #: 16
+;;     Update #: 29
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -94,6 +94,28 @@ Does not set point.  Does nothing if mark ring is empty."
         (goto-char (mark t)))
       (deactivate-mark))))
 
+(defun bd-uniquify-list-head (list compfunc)
+  "remove duplicates of first element from list"
+  (let* ((l (symbol-value list))
+         (head (car l)))
+    (set list (cons head (delete* head (cdr l) :test compfunc)))))
+
+(defun bd-uniquify-marker-ring (ring)
+  "remove duplicates of head from marker-ring held in `ring'"
+  (let ((l (symbol-value ring)))
+    (and l
+         (let* ((head (car l))
+                (head-buffer (marker-buffer head))
+                (head-position (marker-position head))
+                (head-insertion-type (marker-insertion-type head)))
+           (bd-uniquify-list-head ring
+                                  (lambda (head other)
+                                    (or
+                                     (eq other head)
+                                     (and (= head-position (marker-position other))
+                                          (eq head-buffer (marker-buffer other))
+                                          (eq head-insertion-type (marker-insertion-type other))))))))))
+
 ;;;###autoload
 (defun bd-set-mark-command (arg)
   "Enable reversing direction with un/pop-to-mark.
@@ -117,6 +139,16 @@ repeated press of C-SPC goes in same direction
      ((eq arg '-)
       (setq this-command 'unpop-to-mark-command)
       (unpop-to-mark-command))
+     ;; save point into mark-ring on first first backward move
+     ((and (equal arg '(4))
+           (not (eq this-command real-last-command)))
+      ;; We want to prevent the same marker from occuring multiple times.
+      ;;
+      ;; Is this a good idea?
+      (push-mark nil t)
+      (pop-mark)
+      (bd-uniquify-marker-ring 'mark-ring)
+      (setq do-it t))
      (t
       (setq do-it t)))
     (when do-it
